@@ -16,7 +16,7 @@ import re
 
 # Set page config
 st.set_page_config(
-    page_title="PacWest Speeding Violations Dashboard 1.1.25-2.25.25",
+    page_title="Speeding Violations Dashboard (through March 6, 2025)",
     page_icon="🚗",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -113,7 +113,7 @@ st.markdown("""
 <div style="margin-bottom: 2rem;">
     <p style="font-size: 1.1rem; color: #64748b;">
         Comprehensive analysis of fleet vehicle speeding data updated through March 6, 2025.
-        Vehicles with 40+ violations are above allowed threshold.
+        Vehicles with 40+ violations require corrective action.
     </p>
 </div>
 """, unsafe_allow_html=True)
@@ -248,6 +248,14 @@ if df is not None:
         st.markdown('<div class="card-container">', unsafe_allow_html=True)
         st.subheader("Top 40 Offenders by Number of Speeding Events")
         
+        # Simple explanation for presentation
+        st.markdown("""
+        <p style="color: #64748b; margin-bottom: 1rem;">
+            <strong>What this shows:</strong> The vehicles with the most speeding events, ranked from highest to lowest. 
+            Vehicles with 40+ violations (shown in red alert) require corrective action.
+        </p>
+        """, unsafe_allow_html=True)
+        
         # Vehicles requiring corrective action (40+ violations)
         if 'Vehicle' in df.columns and 'violation_count' in df.columns:
             high_violation_vehicles = df.drop_duplicates(subset=['Vehicle'])[
@@ -297,13 +305,17 @@ if df is not None:
             
             # Add insights about top offenders
             if not top_vehicles.empty:
+                # Get the count of vehicles above threshold
+                vehicles_above_threshold = len(high_violation_vehicles)
+                threshold_percentage = (vehicles_above_threshold / len(top_vehicles) * 100) if len(top_vehicles) > 0 else 0
+                
                 st.markdown(f"""
                 <div style="margin-top: 1rem;">
                     <p class="text-sm text-gray-600">
                         This chart shows the drivers and pools with the highest number of speeding events. 
                         {top_vehicles.iloc[0]['Display_ID']} leads with {int(top_vehicles.iloc[0]['violation_count'])} events, followed by 
                         {top_vehicles.iloc[1]['Display_ID']} with {int(top_vehicles.iloc[1]['violation_count'])} events.
-                        The threshold for corrective action is 40 violations.
+                        Of the top 40 vehicles shown, {vehicles_above_threshold} ({threshold_percentage:.1f}%) have 40+ violations and require corrective action.
                     </p>
                 </div>
                 """, unsafe_allow_html=True)
@@ -313,6 +325,14 @@ if df is not None:
     with tabs[1]:  # High Risk Drivers tab
         st.markdown('<div class="card-container">', unsafe_allow_html=True)
         st.subheader("Highest Risk Drivers (Events per Mile)")
+        
+        # Simple explanation for presentation
+        st.markdown("""
+        <p style="color: #64748b; margin-bottom: 1rem;">
+            <strong>What this shows:</strong> Drivers with 40+ violations who have the highest frequency of speeding events per mile driven.
+            These drivers may not have the highest total violations, but they speed more frequently when they drive.
+        </p>
+        """, unsafe_allow_html=True)
         
         if 'Events_Per_Mile' in df.columns and 'Total Distance' in df.columns and 'violation_count' in df.columns:
             # Filter for vehicles with at least 10 miles driven AND 40+ violations
@@ -374,6 +394,14 @@ if df is not None:
     with tabs[2]:  # By Driver Type tab
         st.markdown('<div class="card-container">', unsafe_allow_html=True)
         st.subheader("Speeding Events by Driver Type")
+        
+        # Simple explanation for presentation
+        st.markdown("""
+        <p style="color: #64748b; margin-bottom: 1rem;">
+            <strong>What this shows:</strong> How speeding violations are distributed across different types of drivers.
+            This helps identify whether problems are with individual drivers, pool vehicles, or crew vehicles.
+        </p>
+        """, unsafe_allow_html=True)
         
         if 'Type' in df.columns:
             col1, col2 = st.columns(2)
@@ -439,6 +467,14 @@ if df is not None:
         st.markdown('<div class="card-container">', unsafe_allow_html=True)
         st.subheader("Drivers with Highest Average Speeds")
         
+        # Simple explanation for presentation
+        st.markdown("""
+        <p style="color: #64748b; margin-bottom: 1rem;">
+            <strong>What this shows:</strong> Drivers with 40+ violations who have the highest average speeds.
+            These drivers may be consistently driving at dangerous speeds rather than occasional speeding.
+        </p>
+        """, unsafe_allow_html=True)
+        
         if 'Avg_Speed' in df.columns and 'Total Distance' in df.columns and 'violation_count' in df.columns:
             # Filter for vehicles with at least 10 miles driven AND 40+ violations
             top_speeders = df[(df['Total Distance'] >= 10) & (df['violation_count'] >= 40)].drop_duplicates(subset=['Vehicle'])
@@ -500,44 +536,162 @@ if df is not None:
         st.markdown('<div class="card-container">', unsafe_allow_html=True)
         st.subheader("Correlation: Distance Driven vs. Speeding Events")
         
+        # Simple explanation for presentation
+        st.markdown("""
+        <p style="color: #64748b; margin-bottom: 1rem;">
+            <strong>What this shows:</strong> The relationship between how much a vehicle is driven and how many speeding events it has.
+            Points above the trend line speed more than expected for their mileage.
+        </p>
+        """, unsafe_allow_html=True)
+        
         if 'Total Distance' in df.columns and 'Number Of Events' in df.columns:
             # Create scatter plot data
             scatter_data = df.drop_duplicates(subset=['Vehicle'])
             
-            fig = px.scatter(
-                scatter_data,
-                x='Total Distance',
-                y='Number Of Events',
-                size='Number Of Events',
-                color='Type',
-                hover_name='Display_ID',
-                size_max=50,
-                title="Relationship Between Distance Driven and Number of Speeding Events",
-                labels={
-                    'Total Distance': f'Total Distance ({distance_unit})',
-                    'Number Of Events': 'Number of Speeding Events'
-                }
-            )
-            fig.update_layout(
-                plot_bgcolor='white',
-                paper_bgcolor='white',
-                font={'color': '#020817'},
-                margin=dict(t=40, b=40, l=40, r=40),
-                height=500
-            )
-            st.plotly_chart(fig, use_container_width=True)
+            # Check if statsmodels is available for trendline
+            try:
+                import statsmodels.api as sm
+                has_statsmodels = True
+            except ImportError:
+                has_statsmodels = False
             
-            # Add insights about correlation
-            st.markdown("""
-            <div style="margin-top: 1rem;">
-                <p class="text-sm text-gray-600">
-                    This scatter plot shows the relationship between distance driven and number of speeding events.
-                    Each point represents a driver or vehicle, and the size of the point corresponds to the number of events.
-                    A clear positive correlation shows that more driving generally results in more violations, 
-                    but outliers may indicate drivers who have disproportionately high violation rates.
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
+            # Create the scatter plot with or without trendline
+            if has_statsmodels:
+                fig = px.scatter(
+                    scatter_data,
+                    x='Total Distance',
+                    y='Number Of Events',
+                    size='Number Of Events',
+                    color='Type',
+                    hover_name='Display_ID',
+                    trendline='ols',
+                    labels={
+                        'Total Distance': f'Total Distance ({distance_unit})',
+                        'Number Of Events': 'Number of Speeding Events',
+                        'Type': 'Driver Type'
+                    },
+                    title=f"Correlation between Distance Driven and Speeding Events"
+                )
+                
+                # Calculate the expected number of events based on the trend line
+                X = scatter_data['Total Distance'].values.reshape(-1, 1)
+                y = scatter_data['Number Of Events'].values
+                
+                # Add a constant to the X array for the intercept term
+                X_with_const = sm.add_constant(X)
+                
+                # Fit the OLS model
+                model = sm.OLS(y, X_with_const).fit()
+                
+                # Calculate expected values and deviations
+                scatter_data['Expected_Events'] = model.predict(X_with_const)
+                scatter_data['Deviation'] = scatter_data['Number Of Events'] - scatter_data['Expected_Events']
+                scatter_data['Deviation_Percent'] = (scatter_data['Deviation'] / scatter_data['Expected_Events']) * 100
+                
+                # Create a second visualization to show deviation from expected
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.plotly_chart(fig, use_container_width=True)
+                
+                with col2:
+                    # Create a bar chart showing deviation from expected
+                    # Sort by deviation and get top 15 (positive deviation)
+                    top_deviations = scatter_data.sort_values('Deviation', ascending=False).head(15)
+                    
+                    deviation_fig = go.Figure()
+                    
+                    # Add the bar trace
+                    deviation_fig.add_trace(go.Bar(
+                        x=top_deviations['Display_ID'],
+                        y=top_deviations['Deviation'],
+                        marker=dict(
+                            color=top_deviations['Deviation'],
+                            colorscale='Reds',
+                        ),
+                        text=[f"+{x:.0f}" for x in top_deviations['Deviation']],
+                        textposition='outside',
+                        textfont=dict(size=12),
+                    ))
+                    
+                    # Update layout
+                    deviation_fig.update_layout(
+                        title="Top 15 Drivers Above Expected Speeding Events",
+                        plot_bgcolor='white',
+                        paper_bgcolor='white',
+                        font={'color': '#020817'},
+                        margin=dict(t=40, b=40, l=40, r=40),
+                        xaxis_tickangle=-45,
+                        xaxis_title="",
+                        yaxis_title="Events Above Expected",
+                        height=500
+                    )
+                    
+                    st.plotly_chart(deviation_fig, use_container_width=True)
+                
+                # Add a table showing the top 10 drivers with highest deviation
+                st.subheader("Drivers with Most Speeding Events Above Expected")
+                
+                # Prepare the data for the table
+                deviation_table = top_deviations[['Display_ID', 'Total Distance', 'Number Of Events', 'Expected_Events', 'Deviation', 'Deviation_Percent']].head(10).copy()
+                deviation_table.columns = ['Driver', 'Distance (miles)', 'Actual Events', 'Expected Events', 'Events Above Expected', '% Above Expected']
+                
+                # Format the numeric columns
+                deviation_table['Expected Events'] = deviation_table['Expected Events'].map(lambda x: f"{x:.1f}")
+                deviation_table['Events Above Expected'] = deviation_table['Events Above Expected'].map(lambda x: f"+{x:.1f}")
+                deviation_table['% Above Expected'] = deviation_table['% Above Expected'].map(lambda x: f"+{x:.1f}%")
+                
+                # Display the table
+                st.dataframe(deviation_table, use_container_width=True)
+                
+                # Add insights about correlation
+                st.markdown("""
+                <div style="margin-top: 1rem;">
+                    <p class="text-sm text-gray-600">
+                        <strong>How to interpret:</strong> The scatter plot shows the relationship between distance driven and speeding events.
+                        The bar chart highlights drivers who have <strong>more speeding events than expected</strong> based on their mileage.
+                        These drivers may need additional attention as they speed more frequently than their peers who drive similar distances.
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                fig = px.scatter(
+                    scatter_data,
+                    x='Total Distance',
+                    y='Number Of Events',
+                    size='Number Of Events',
+                    color='Type',
+                    hover_name='Display_ID',
+                    labels={
+                        'Total Distance': f'Total Distance ({distance_unit})',
+                        'Number Of Events': 'Number of Speeding Events',
+                        'Type': 'Driver Type'
+                    },
+                    title=f"Correlation between Distance Driven and Speeding Events"
+                )
+                
+                fig.update_layout(
+                    plot_bgcolor='white',
+                    paper_bgcolor='white',
+                    font={'color': '#020817'},
+                    margin=dict(t=40, b=40, l=40, r=40),
+                    height=500
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
+                
+                st.markdown("""
+                <div style="margin-top: 1rem;">
+                    <p class="text-sm text-gray-600">
+                        This scatter plot shows the relationship between distance driven and number of speeding events.
+                        Each point represents a driver, with the size indicating the number of events.
+                        Drivers in the upper right have both high mileage and high violation counts.
+                    </p>
+                    <p class="text-sm text-gray-600">
+                        <strong>Note:</strong> Install the statsmodels package to see additional analysis of drivers who speed more than expected for their mileage.
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
         else:
             st.info("Required data for correlation analysis is not available in the dataset.")
         
@@ -546,6 +700,14 @@ if df is not None:
     with tabs[5]:  # Safe Drivers tab
         st.markdown('<div class="card-container">', unsafe_allow_html=True)
         st.subheader("Safe Drivers - Good Driving Habits")
+        
+        # Simple explanation for presentation
+        st.markdown("""
+        <p style="color: #64748b; margin-bottom: 1rem;">
+            <strong>What this shows:</strong> Drivers with fewer than 40 violations who have driven significant mileage (100+ miles).
+            These drivers demonstrate good driving habits and could be recognized for their safe driving.
+        </p>
+        """, unsafe_allow_html=True)
         
         if 'Events_Per_Mile' in df.columns and 'Total Distance' in df.columns and 'violation_count' in df.columns and 'Avg_Speed' in df.columns:
             # Filter for vehicles with SIGNIFICANT mileage (at least 100 miles) AND less than 40 violations
@@ -638,10 +800,11 @@ if df is not None:
         st.markdown('<div class="card-container">', unsafe_allow_html=True)
         st.subheader("Complete Dataset")
         
-        # Create a section for search and filters
+        # Simple explanation for presentation
         st.markdown("""
         <p style="color: #64748b; margin-bottom: 1rem;">
-            View, search, and sort the complete dataset. Use the filters below to narrow down the results.
+            <strong>What this shows:</strong> The complete dataset with all vehicles and their metrics.
+            Use the filters and search to find specific drivers or analyze different groups.
         </p>
         """, unsafe_allow_html=True)
         
@@ -804,37 +967,62 @@ if df is not None:
     
     # Summary and Recommendations
     st.markdown('<div class="card-container">', unsafe_allow_html=True)
-    st.subheader("Summary and Recommendations")
+    st.subheader("Summary")
     
-    total_events = df['Number Of Events'].sum() if 'Number Of Events' in df.columns else len(df)
-    unique_vehicles = df['Vehicle'].nunique() if 'Vehicle' in df.columns else 'N/A'
-    
-    top_offender = None
-    top_offender_count = 0
-    if 'Vehicle' in df.columns and 'violation_count' in df.columns:
-        top_vehicle_data = df.drop_duplicates(subset=['Vehicle']).nlargest(1, 'violation_count')
-        if not top_vehicle_data.empty:
-            top_offender = top_vehicle_data.iloc[0]['Display_ID']
-            top_offender_count = int(top_vehicle_data.iloc[0]['violation_count'])
-    
-    highest_risk = None
-    highest_risk_rate = 0
-    if 'Events_Per_Mile' in df.columns and 'Total Distance' in df.columns:
-        high_risk_data = df[df['Total Distance'] >= 10].drop_duplicates(subset=['Vehicle']).nlargest(1, 'Events_Per_Mile')
-        if not high_risk_data.empty:
-            highest_risk = high_risk_data.iloc[0]['Display_ID']
-            highest_risk_rate = high_risk_data.iloc[0]['Events_Per_Mile']
-    
-    st.markdown(f"""
-    <ul class="list-disc pl-5 space-y-1">
-        <li>Total of <strong>{total_events}</strong> speeding events recorded across <strong>{unique_vehicles}</strong> vehicles</li>
-        {'<li>Top individual contributor: <strong>' + str(top_offender) + '</strong> with <strong>' + str(top_offender_count) + '</strong> events</li>' if top_offender else ''}
-        {'<li>Highest risk driver (per mile): <strong>' + str(highest_risk) + '</strong> with <strong>' + f"{highest_risk_rate:.2f}" + '</strong> events per mile</li>' if highest_risk else ''}
-        <li>Focus driver training on both high event count drivers and those with high events-per-mile ratios</li>
-        <li>Consider specific intervention for pool vehicles if they show higher violation rates</li>
-        <li><strong>Corrective action recommended</strong> for all vehicles with 40+ violations</li>
-    </ul>
-    """, unsafe_allow_html=True)
+    # Get key metrics for the summary
+    if not df.empty:
+        total_vehicles = df['Vehicle'].nunique() if 'Vehicle' in df.columns else 0
+        total_violations = len(df)
+        
+        # Count vehicles with 40+ violations
+        if 'violation_count' in df.columns:
+            high_violation_count = df[df['violation_count'] >= 40]['Vehicle'].nunique()
+            high_violation_percentage = (high_violation_count / total_vehicles * 100) if total_vehicles > 0 else 0
+        else:
+            high_violation_count = 0
+            high_violation_percentage = 0
+        
+        # Get driver types breakdown for vehicles with 40+ violations
+        driver_type_breakdown = ""
+        if 'Type' in df.columns and 'violation_count' in df.columns:
+            high_violation_df = df[df['violation_count'] >= 40].drop_duplicates(subset=['Vehicle'])
+            type_counts = high_violation_df['Type'].value_counts()
+            
+            type_percentages = []
+            for driver_type, count in type_counts.items():
+                percentage = (count / high_violation_count * 100) if high_violation_count > 0 else 0
+                type_percentages.append(f"{driver_type}: {count} ({percentage:.1f}%)")
+            
+            driver_type_breakdown = ", ".join(type_percentages)
+        
+        # Get top individual contributor with 40+ violations
+        top_individual = ""
+        if 'Type' in df.columns and 'violation_count' in df.columns and 'Display_ID' in df.columns:
+            individuals = df[(df['Type'] == 'Individual') & (df['violation_count'] >= 40)].drop_duplicates(subset=['Vehicle'])
+            if not individuals.empty:
+                top_individual_row = individuals.nlargest(1, 'violation_count').iloc[0]
+                top_individual = f"{top_individual_row['Display_ID']} with {int(top_individual_row['violation_count'])} violations"
+        
+        # Get highest risk driver with 40+ violations
+        highest_risk = ""
+        if 'Events_Per_Mile' in df.columns and 'Total Distance' in df.columns and 'violation_count' in df.columns and 'Display_ID' in df.columns:
+            risk_drivers = df[(df['Total Distance'] >= 10) & (df['violation_count'] >= 40)].drop_duplicates(subset=['Vehicle'])
+            if not risk_drivers.empty:
+                highest_risk_row = risk_drivers.nlargest(1, 'Events_Per_Mile').iloc[0]
+                highest_risk = f"{highest_risk_row['Display_ID']} with {highest_risk_row['Events_Per_Mile']:.2f} events per mile"
+        
+        # Create the summary with bullet points
+        st.markdown(f"""
+        <ul class="list-disc pl-5 space-y-1">
+            <li>Total of <strong>{total_violations}</strong> speeding events recorded across <strong>{total_vehicles}</strong> vehicles</li>
+            <li><strong>{high_violation_count} vehicles ({high_violation_percentage:.1f}%)</strong> have 40+ violations and require corrective action</li>
+            {f"<li>Breakdown of vehicles requiring corrective action by driver type: {driver_type_breakdown}</li>" if driver_type_breakdown else ""}
+            {f"<li>Top individual contributor: <strong>{top_individual}</strong></li>" if top_individual else ""}
+            {f"<li>Highest risk driver (per mile): <strong>{highest_risk}</strong></li>" if highest_risk else ""}
+        </ul>
+        """, unsafe_allow_html=True)
+    else:
+        st.info("No data available to generate summary.")
     
     st.markdown('</div>', unsafe_allow_html=True)
 else:
