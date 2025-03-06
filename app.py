@@ -16,7 +16,7 @@ import re
 
 # Set page config
 st.set_page_config(
-    page_title="PacWest Speeding Violations Dashboard 1.1.25-2.25.25",
+    page_title="PacWest Speeding Violations Dashboard",
     page_icon="🚗",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -108,7 +108,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Title and description
-st.title("Speeding Violations Dashboard")
+st.title("PacWest Speeding Violations Dashboard")
 st.markdown("""
 <div style="margin-bottom: 2rem;">
     <p style="font-size: 1.1rem; color: #64748b;">
