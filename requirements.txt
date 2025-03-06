@@ -1,0 +1,9 @@
+streamlit>=1.24.0
+pandas>=1.5.0
+numpy>=1.22.0
+plotly>=5.13.0
+openpyxl>=3.1.0
+matplotlib
+seaborn
+# Optional visualization packages
+# If you have issues installing these, the app will still work without them
