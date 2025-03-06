@@ -16,7 +16,7 @@ import re
 
 # Set page config
 st.set_page_config(
-    page_title="PacWest Speeding Violations Dashboard",
+    page_title="PacWest Speeding Violations Dashboard 1.1.25-2.25.25",
     page_icon="🚗",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -108,7 +108,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Title and description
-st.title("PacWest Speeding Violations Dashboard")
+st.title("Speeding Violations Dashboard")
 st.markdown("""
 <div style="margin-bottom: 2rem;">
     <p style="font-size: 1.1rem; color: #64748b;">
@@ -242,7 +242,7 @@ if df is not None:
     st.markdown('</div>', unsafe_allow_html=True)
     
     # Create tabs for different analyses
-    tabs = st.tabs(["Top Offenders", "High Risk Drivers", "By Driver Type", "Highest Speeds", "Correlation Analysis"])
+    tabs = st.tabs(["Top Offenders", "High Risk Drivers", "By Driver Type", "Highest Speeds", "Correlation Analysis", "Safe Drivers", "Full Data"])
     
     with tabs[0]:  # Top Offenders tab
         st.markdown('<div class="card-container">', unsafe_allow_html=True)
@@ -314,9 +314,9 @@ if df is not None:
         st.markdown('<div class="card-container">', unsafe_allow_html=True)
         st.subheader("Highest Risk Drivers (Events per Mile)")
         
-        if 'Events_Per_Mile' in df.columns and 'Total Distance' in df.columns:
-            # Filter for vehicles with at least 10 miles driven
-            high_risk_drivers = df[df['Total Distance'] >= 10].drop_duplicates(subset=['Vehicle'])
+        if 'Events_Per_Mile' in df.columns and 'Total Distance' in df.columns and 'violation_count' in df.columns:
+            # Filter for vehicles with at least 10 miles driven AND 40+ violations
+            high_risk_drivers = df[(df['Total Distance'] >= 10) & (df['violation_count'] >= 40)].drop_duplicates(subset=['Vehicle'])
             high_risk_drivers = high_risk_drivers.nlargest(15, 'Events_Per_Mile')
             
             if not high_risk_drivers.empty:
@@ -338,7 +338,7 @@ if df is not None:
                 
                 # Update layout
                 fig.update_layout(
-                    title="Highest Risk Drivers (Events per Mile, min 10 miles driven)",
+                    title="Highest Risk Drivers with 40+ Violations (Events per Mile, min 10 miles driven)",
                     plot_bgcolor='white',
                     paper_bgcolor='white',
                     font={'color': '#020817'},
@@ -351,18 +351,21 @@ if df is not None:
                 
                 st.plotly_chart(fig, use_container_width=True)
                 
-                # Add insights about high risk drivers
+                # Add insights about high risk drivers - Fixed string formatting
+                top_driver = high_risk_drivers.iloc[0]['Display_ID'] if not high_risk_drivers.empty else 'No driver'
+                top_events_per_mile = high_risk_drivers.iloc[0]['Events_Per_Mile'] if not high_risk_drivers.empty else 0
+                
                 st.markdown(f"""
                 <div style="margin-top: 1rem;">
                     <p class="text-sm text-gray-600">
-                        This chart shows drivers with the highest frequency of speeding events per mile driven.
+                        This chart shows drivers with 40+ violations and the highest frequency of speeding events per mile driven.
                         These drivers represent the highest risk based on violation density rather than absolute counts.
-                        {high_risk_drivers.iloc[0]['Display_ID']} has {high_risk_drivers.iloc[0]['Events_Per_Mile']:.2f} events per mile.
+                        {top_driver} has {top_events_per_mile:.2f} events per mile.
                     </p>
                 </div>
                 """, unsafe_allow_html=True)
             else:
-                st.info("No vehicles with sufficient mileage (10+ miles) to calculate reliable risk metrics.")
+                st.info("No vehicles with 40+ violations and sufficient mileage (10+ miles) to calculate reliable risk metrics.")
         else:
             st.info("Required data for risk analysis is not available in the dataset.")
         
@@ -436,9 +439,9 @@ if df is not None:
         st.markdown('<div class="card-container">', unsafe_allow_html=True)
         st.subheader("Drivers with Highest Average Speeds")
         
-        if 'Avg_Speed' in df.columns and 'Total Distance' in df.columns:
-            # Filter for vehicles with at least 10 miles driven
-            top_speeders = df[df['Total Distance'] >= 10].drop_duplicates(subset=['Vehicle'])
+        if 'Avg_Speed' in df.columns and 'Total Distance' in df.columns and 'violation_count' in df.columns:
+            # Filter for vehicles with at least 10 miles driven AND 40+ violations
+            top_speeders = df[(df['Total Distance'] >= 10) & (df['violation_count'] >= 40)].drop_duplicates(subset=['Vehicle'])
             top_speeders = top_speeders.nlargest(15, 'Avg_Speed')
             
             if not top_speeders.empty:
@@ -460,7 +463,7 @@ if df is not None:
                 
                 # Update layout
                 fig.update_layout(
-                    title="Drivers with Highest Average Speeds (min 10 miles driven)",
+                    title="Drivers with 40+ Violations and Highest Average Speeds (min 10 miles driven)",
                     plot_bgcolor='white',
                     paper_bgcolor='white',
                     font={'color': '#020817'},
@@ -473,18 +476,21 @@ if df is not None:
                 
                 st.plotly_chart(fig, use_container_width=True)
                 
-                # Add insights about top speeders
+                # Add insights about top speeders - Fixed string formatting
+                top_speeder = top_speeders.iloc[0]['Display_ID'] if not top_speeders.empty else 'No driver'
+                top_speed = top_speeders.iloc[0]['Avg_Speed'] if not top_speeders.empty else 0
+                
                 st.markdown(f"""
                 <div style="margin-top: 1rem;">
                     <p class="text-sm text-gray-600">
-                        This chart displays drivers with the highest average speeds. Average speed is calculated 
+                        This chart displays drivers with 40+ violations and the highest average speeds. Average speed is calculated 
                         from total distance divided by total drive time. The highest average speed is 
-                        {top_speeders.iloc[0]['Avg_Speed']:.1f} {distance_unit}/hour by {top_speeders.iloc[0]['Display_ID']}.
+                        {top_speed:.1f} {distance_unit}/hour by {top_speeder}.
                     </p>
                 </div>
                 """, unsafe_allow_html=True)
             else:
-                st.info("No vehicles with sufficient mileage (10+ miles) to calculate reliable speed metrics.")
+                st.info("No vehicles with 40+ violations and sufficient mileage (10+ miles) to calculate reliable speed metrics.")
         else:
             st.info("Required data for speed analysis is not available in the dataset.")
         
@@ -534,6 +540,265 @@ if df is not None:
             """, unsafe_allow_html=True)
         else:
             st.info("Required data for correlation analysis is not available in the dataset.")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    with tabs[5]:  # Safe Drivers tab
+        st.markdown('<div class="card-container">', unsafe_allow_html=True)
+        st.subheader("Safe Drivers - Good Driving Habits")
+        
+        if 'Events_Per_Mile' in df.columns and 'Total Distance' in df.columns and 'violation_count' in df.columns and 'Avg_Speed' in df.columns:
+            # Filter for vehicles with SIGNIFICANT mileage (at least 100 miles) AND less than 40 violations
+            safe_drivers = df[(df['Total Distance'] >= 100) & (df['violation_count'] < 40)].drop_duplicates(subset=['Vehicle'])
+            
+            if not safe_drivers.empty:
+                # Calculate a safety score (lower is better)
+                # Low events per mile and reasonable average speed contribute to a better score
+                # We'll also factor in total distance to favor drivers who have driven more
+                safe_drivers['Safety_Score'] = (safe_drivers['Events_Per_Mile'] * 10) - (safe_drivers['Total Distance'] / 1000) + (safe_drivers['Avg_Speed'] / 20)
+                
+                # Get the top 15 safest drivers (lowest safety score)
+                safest_drivers = safe_drivers.nsmallest(15, 'Safety_Score')
+                
+                # Create a bar chart with data labels using plotly graph objects
+                fig = go.Figure()
+                
+                # Add the bar trace for events per mile (primary metric for safe driving)
+                fig.add_trace(go.Bar(
+                    x=safest_drivers['Display_ID'],
+                    y=safest_drivers['Events_Per_Mile'],
+                    marker=dict(
+                        color='rgba(58, 171, 115, 0.8)',
+                    ),
+                    text=[f"{x:.2f}" for x in safest_drivers['Events_Per_Mile']],
+                    textposition='outside',
+                    textfont=dict(size=12),
+                    name='Events Per Mile'
+                ))
+                
+                # Update layout
+                fig.update_layout(
+                    title="Safest Drivers (Lowest Events per Mile, min 100 miles driven)",
+                    plot_bgcolor='white',
+                    paper_bgcolor='white',
+                    font={'color': '#020817'},
+                    margin=dict(t=40, b=40, l=40, r=40),
+                    xaxis_tickangle=-45,
+                    xaxis_title="",
+                    yaxis_title="Events per Mile",
+                    height=500
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Create a table of safe drivers with their metrics
+                st.subheader("Safe Driver Details")
+                
+                # Prepare the data for the table
+                safe_table = safest_drivers[['Display_ID', 'Total Distance', 'Number Of Events', 'Events_Per_Mile', 'Avg_Speed', 'violation_count']].copy()
+                safe_table.columns = ['Driver', 'Total Distance (miles)', 'Number Of Events', 'Events Per Mile', 'Avg Speed (mph)', 'Total Violations']
+                
+                # Format the numeric columns
+                safe_table['Events Per Mile'] = safe_table['Events Per Mile'].map('{:.2f}'.format)
+                safe_table['Avg Speed (mph)'] = safe_table['Avg Speed (mph)'].map('{:.1f}'.format)
+                
+                # Display the table
+                st.dataframe(safe_table, use_container_width=True)
+                
+                # Add insights about safe drivers
+                top_safe_driver = safest_drivers.iloc[0]['Display_ID'] if not safest_drivers.empty else 'No driver'
+                top_safe_distance = safest_drivers.iloc[0]['Total Distance'] if not safest_drivers.empty else 0
+                top_safe_events_per_mile = safest_drivers.iloc[0]['Events_Per_Mile'] if not safest_drivers.empty else 0
+                top_safe_speed = safest_drivers.iloc[0]['Avg_Speed'] if not safest_drivers.empty else 0
+                
+                st.markdown(f"""
+                <div style="margin-top: 1rem; padding: 1rem; background-color: #f0fff4; border-left: 4px solid #38a169; border-radius: 0.375rem;">
+                    <h4 style="color: #2f855a; margin-top: 0;">🏆 Safe Driving Recognition</h4>
+                    <p class="text-sm" style="color: #2f855a;">
+                        These drivers have demonstrated good driving habits with fewer than 40 violations and low events per mile,
+                        while maintaining significant mileage (100+ miles).
+                    </p>
+                    <p class="text-sm" style="color: #2f855a;">
+                        <strong>{top_safe_driver}</strong> leads with only {top_safe_events_per_mile:.2f} events per mile
+                        over {top_safe_distance:.1f} miles driven, while maintaining a reasonable average speed of {top_safe_speed:.1f} mph.
+                    </p>
+                    <p class="text-sm" style="color: #2f855a; margin-bottom: 0;">
+                        Consider recognizing these drivers for their safe driving practices and using them as examples for drivers requiring corrective action.
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.info("No vehicles with less than 40 violations and significant mileage (100+ miles) to evaluate safe driving habits.")
+        else:
+            st.info("Required data for safe driver analysis is not available in the dataset.")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    with tabs[6]:  # Full Data tab
+        st.markdown('<div class="card-container">', unsafe_allow_html=True)
+        st.subheader("Complete Dataset")
+        
+        # Create a section for search and filters
+        st.markdown("""
+        <p style="color: #64748b; margin-bottom: 1rem;">
+            View, search, and sort the complete dataset. Use the filters below to narrow down the results.
+        </p>
+        """, unsafe_allow_html=True)
+        
+        # Add filters in columns
+        filter_col1, filter_col2, filter_col3 = st.columns(3)
+        
+        with filter_col1:
+            # Filter by violation count
+            min_violations = st.number_input("Min Violations", min_value=0, value=0, step=1)
+            max_violations = st.number_input("Max Violations", min_value=0, value=1000, step=1)
+        
+        with filter_col2:
+            # Filter by driver type if available
+            if 'Type' in df.columns:
+                driver_types = ['All'] + sorted(df['Type'].unique().tolist())
+                selected_type = st.selectbox("Driver Type", driver_types)
+            
+            # Filter by distance
+            min_distance = st.number_input("Min Distance (miles)", min_value=0.0, value=0.0, step=10.0)
+        
+        with filter_col3:
+            # Search by driver/vehicle
+            search_term = st.text_input("Search Driver/Vehicle", "")
+            
+            # Sort options
+            sort_options = {
+                "Violation Count (High to Low)": ("violation_count", False),
+                "Violation Count (Low to High)": ("violation_count", True),
+                "Events Per Mile (High to Low)": ("Events_Per_Mile", False),
+                "Events Per Mile (Low to High)": ("Events_Per_Mile", True),
+                "Distance (High to Low)": ("Total Distance", False),
+                "Distance (Low to High)": ("Total Distance", True),
+                "Average Speed (High to Low)": ("Avg_Speed", False),
+                "Average Speed (Low to High)": ("Avg_Speed", True)
+            }
+            sort_by = st.selectbox("Sort By", list(sort_options.keys()))
+        
+        # Apply filters to create a filtered dataframe
+        filtered_df = df.copy()
+        
+        # Apply violation count filter
+        if 'violation_count' in filtered_df.columns:
+            filtered_df = filtered_df[(filtered_df['violation_count'] >= min_violations) & 
+                                     (filtered_df['violation_count'] <= max_violations)]
+        
+        # Apply driver type filter
+        if 'Type' in filtered_df.columns and selected_type != 'All':
+            filtered_df = filtered_df[filtered_df['Type'] == selected_type]
+        
+        # Apply distance filter
+        if 'Total Distance' in filtered_df.columns:
+            filtered_df = filtered_df[filtered_df['Total Distance'] >= min_distance]
+        
+        # Apply search filter
+        if search_term:
+            if 'Display_ID' in filtered_df.columns:
+                filtered_df = filtered_df[filtered_df['Display_ID'].str.contains(search_term, case=False, na=False)]
+            elif 'Vehicle' in filtered_df.columns:
+                filtered_df = filtered_df[filtered_df['Vehicle'].str.contains(search_term, case=False, na=False)]
+        
+        # Apply sorting
+        if sort_by in sort_options:
+            sort_col, sort_asc = sort_options[sort_by]
+            if sort_col in filtered_df.columns:
+                filtered_df = filtered_df.sort_values(by=sort_col, ascending=sort_asc)
+        
+        # Remove duplicates to show one row per vehicle
+        if 'Vehicle' in filtered_df.columns:
+            filtered_df = filtered_df.drop_duplicates(subset=['Vehicle'])
+        
+        # Prepare the display dataframe with selected columns
+        display_columns = []
+        
+        # Add key identifier columns
+        if 'Display_ID' in filtered_df.columns:
+            display_columns.append('Display_ID')
+        elif 'Vehicle' in filtered_df.columns:
+            display_columns.append('Vehicle')
+        
+        # Add type column if available
+        if 'Type' in filtered_df.columns:
+            display_columns.append('Type')
+        
+        # Add key metrics
+        for col in ['violation_count', 'Total Distance', 'Number Of Events', 'Events_Per_Mile', 'Avg_Speed']:
+            if col in filtered_df.columns:
+                display_columns.append(col)
+        
+        # Create the display dataframe
+        if display_columns:
+            display_df = filtered_df[display_columns].copy()
+            
+            # Rename columns for better readability
+            column_rename = {
+                'Display_ID': 'Driver/Vehicle',
+                'Vehicle': 'Vehicle ID',
+                'violation_count': 'Total Violations',
+                'Total Distance': 'Distance (miles)',
+                'Number Of Events': 'Events',
+                'Events_Per_Mile': 'Events Per Mile',
+                'Avg_Speed': 'Avg Speed (mph)'
+            }
+            
+            display_df = display_df.rename(columns={col: column_rename.get(col, col) for col in display_df.columns})
+            
+            # Format numeric columns
+            for col in display_df.columns:
+                if 'Events Per Mile' in col:
+                    display_df[col] = display_df[col].map(lambda x: f"{x:.2f}" if pd.notnull(x) else "")
+                elif 'Speed' in col:
+                    display_df[col] = display_df[col].map(lambda x: f"{x:.1f}" if pd.notnull(x) else "")
+                elif 'Distance' in col:
+                    display_df[col] = display_df[col].map(lambda x: f"{x:.1f}" if pd.notnull(x) else "")
+            
+            # Display the dataframe with pagination
+            st.dataframe(display_df, use_container_width=True, height=500)
+            
+            # Show record count
+            st.markdown(f"<p style='color: #64748b;'>Showing {len(display_df)} records</p>", unsafe_allow_html=True)
+            
+            # Add download button
+            csv = display_df.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="Download Data as CSV",
+                data=csv,
+                file_name="fleet_speeding_data.csv",
+                mime="text/csv",
+            )
+        else:
+            st.info("No data available with the current filters.")
+        
+        # Add a section for viewing the raw data
+        with st.expander("View Original Format Data"):
+            # Get the original columns from the Excel file
+            original_columns = df.columns.tolist()
+            
+            # Remove the derived columns we added
+            derived_columns = ['Vehicle', 'Driver', 'isPool', 'isCrew', 'Type', 'Display_ID', 
+                              'violation_count', 'Duration_Minutes', 'Avg_Speed', 'Events_Per_Mile', 'Safety_Score']
+            
+            original_display_columns = [col for col in original_columns if col not in derived_columns]
+            
+            if original_display_columns:
+                # Apply the same filters to the original format
+                original_filtered_df = filtered_df[original_display_columns].copy()
+                st.dataframe(original_filtered_df, use_container_width=True, height=400)
+                
+                # Add download button for original format
+                original_csv = original_filtered_df.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="Download Original Format as CSV",
+                    data=original_csv,
+                    file_name="fleet_speeding_data_original.csv",
+                    mime="text/csv",
+                )
+            else:
+                st.info("Original format data not available.")
         
         st.markdown('</div>', unsafe_allow_html=True)
     
