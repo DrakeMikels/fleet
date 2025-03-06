@@ -113,7 +113,7 @@ st.markdown("""
 <div style="margin-bottom: 2rem;">
     <p style="font-size: 1.1rem; color: #64748b;">
         Comprehensive analysis of fleet vehicle speeding data updated through March 6, 2025.
-        Vehicles with 40+ violations require corrective action.
+        Vehicles with 40+ violations are above allowed threshold.
     </p>
 </div>
 """, unsafe_allow_html=True)
@@ -567,7 +567,7 @@ if df is not None:
         {'<li>Highest risk driver (per mile): <strong>' + str(highest_risk) + '</strong> with <strong>' + f"{highest_risk_rate:.2f}" + '</strong> events per mile</li>' if highest_risk else ''}
         <li>Focus driver training on both high event count drivers and those with high events-per-mile ratios</li>
         <li>Consider specific intervention for pool vehicles if they show higher violation rates</li>
-        <li><strong>Corrective action required</strong> for all vehicles with 40+ violations</li>
+        <li><strong>Corrective action recommended</strong> for all vehicles with 40+ violations</li>
     </ul>
     """, unsafe_allow_html=True)
     
