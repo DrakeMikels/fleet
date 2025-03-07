@@ -22,6 +22,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Get the current theme
+is_dark_theme = st.get_option("theme.base") == "dark"
+text_color = "#FAFAFA" if is_dark_theme else "#333333"
+background_color = "rgba(0,0,0,0)"
+card_background = "#1E1E1E" if is_dark_theme else "#FFFFFF"
+card_border = "#444444" if is_dark_theme else "#E0E0E0"
+
 # Custom CSS to make it look like shadcn/ui with dark mode support
 st.markdown("""
     <style>
