@@ -14,35 +14,39 @@ except ImportError:
 import os
 import re
 
-# Set page config
+# Set page config with dark mode support
 st.set_page_config(
-    page_title="PacWest Speeding Violations Dashboard (through March 6, 2025)",
+    page_title="Speeding Violations Dashboard (through March 6, 2025)",
     page_icon="🚗",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS to make it look like shadcn/ui
+# Custom CSS to make it look like shadcn/ui with dark mode support
 st.markdown("""
     <style>
-    /* Main container */
-    .main {
-        background-color: #ffffff;
-        color: #020817;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    /* Dark mode compatibility */
+    [data-testid="stAppViewContainer"] {
+        color: var(--text-color);
+    }
+    
+    [data-testid="stHeader"] {
+        background-color: rgba(0, 0, 0, 0);
+    }
+    
+    [data-testid="stToolbar"] {
+        right: 2rem;
     }
     
     /* Headers */
     h1, h2, h3, h4, h5 {
-        color: #020817;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
         font-weight: 600;
     }
     
     /* Cards */
     div[data-testid="stMetric"] {
-        background-color: #ffffff;
-        border: 1px solid #e2e8f0;
+        border: 1px solid rgba(128, 128, 128, 0.2);
         border-radius: 0.5rem;
         padding: 1rem;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -50,8 +54,6 @@ st.markdown("""
     
     /* Buttons */
     .stButton > button {
-        background-color: #020817;
-        color: white;
         border: none;
         border-radius: 0.375rem;
         padding: 0.5rem 1rem;
@@ -59,7 +61,7 @@ st.markdown("""
     }
     
     .stButton > button:hover {
-        background-color: #1a1a1a;
+        opacity: 0.9;
     }
     
     /* Tabs */
@@ -68,27 +70,25 @@ st.markdown("""
     }
     
     .stTabs [data-baseweb="tab"] {
-        background-color: #f8fafc;
         border-radius: 4px 4px 0px 0px;
         padding: 10px 20px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid rgba(128, 128, 128, 0.2);
         border-bottom: none;
     }
     
     .stTabs [aria-selected="true"] {
-        background-color: white;
-        border-bottom: 2px solid #020817;
+        border-bottom: 2px solid #4e8df5;
     }
     
     /* Dataframe */
     .dataframe {
-        border: 1px solid #e2e8f0;
+        border: 1px solid rgba(128, 128, 128, 0.2);
         border-radius: 0.5rem;
     }
     
     /* Alert for high violations */
     .high-violations {
-        background-color: #fee2e2;
+        background-color: rgba(239, 68, 68, 0.1);
         border-left: 4px solid #ef4444;
         padding: 1rem;
         margin: 1rem 0;
@@ -97,21 +97,39 @@ st.markdown("""
     
     /* Card container */
     .card-container {
-        border: 1px solid #e2e8f0;
+        border: 1px solid rgba(128, 128, 128, 0.2);
         border-radius: 0.5rem;
         padding: 1.5rem;
         margin-bottom: 1rem;
-        background-color: white;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    /* Safe driver highlight */
+    .safe-driver-highlight {
+        background-color: rgba(56, 161, 105, 0.1);
+        border-left: 4px solid #38a169;
+        border-radius: 0.375rem;
+        padding: 1rem;
+    }
+    
+    /* Explanation text */
+    .explanation-text {
+        margin-bottom: 1rem;
+        opacity: 0.8;
+    }
+    
+    /* Fix for plotly charts in dark mode */
+    .js-plotly-plot .plotly .main-svg {
+        background: transparent !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
 # Title and description
-st.title("PacWest Speeding Violations Dashboard")
+st.title("Speeding Violations Dashboard")
 st.markdown("""
 <div style="margin-bottom: 2rem;">
-    <p style="font-size: 1.1rem; color: #64748b;">
+    <p class="explanation-text">
         Comprehensive analysis of fleet vehicle speeding data updated through March 6, 2025.
         Vehicles with 40+ violations require corrective action.
     </p>
@@ -250,7 +268,7 @@ if df is not None:
         
         # Simple explanation for presentation
         st.markdown("""
-        <p style="color: #64748b; margin-bottom: 1rem;">
+        <p class="explanation-text">
             <strong>What this shows:</strong> The vehicles with the most speeding events, ranked from highest to lowest. 
             Vehicles with 40+ violations (shown in red alert) require corrective action.
         </p>
@@ -291,9 +309,9 @@ if df is not None:
             # Update layout
             fig.update_layout(
                 title="Top 40 Vehicles by Number of Speeding Events",
-                plot_bgcolor='white',
-                paper_bgcolor='white',
-                font={'color': '#020817'},
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                font={'color': '#333333'},
                 margin=dict(t=40, b=40, l=40, r=40),
                 xaxis_tickangle=-45,
                 xaxis_title="",
@@ -311,7 +329,7 @@ if df is not None:
                 
                 st.markdown(f"""
                 <div style="margin-top: 1rem;">
-                    <p class="text-sm text-gray-600">
+                    <p class="explanation-text">
                         This chart shows the drivers and pools with the highest number of speeding events. 
                         {top_vehicles.iloc[0]['Display_ID']} leads with {int(top_vehicles.iloc[0]['violation_count'])} events, followed by 
                         {top_vehicles.iloc[1]['Display_ID']} with {int(top_vehicles.iloc[1]['violation_count'])} events.
@@ -328,7 +346,7 @@ if df is not None:
         
         # Simple explanation for presentation
         st.markdown("""
-        <p style="color: #64748b; margin-bottom: 1rem;">
+        <p class="explanation-text">
             <strong>What this shows:</strong> Drivers with 40+ violations who have the highest frequency of speeding events per mile driven.
             These drivers may not have the highest total violations, but they speed more frequently when they drive.
         </p>
@@ -774,17 +792,17 @@ if df is not None:
                 top_safe_speed = safest_drivers.iloc[0]['Avg_Speed'] if not safest_drivers.empty else 0
                 
                 st.markdown(f"""
-                <div style="margin-top: 1rem; padding: 1rem; background-color: #f0fff4; border-left: 4px solid #38a169; border-radius: 0.375rem;">
-                    <h4 style="color: #2f855a; margin-top: 0;">🏆 Safe Driving Recognition</h4>
-                    <p class="text-sm" style="color: #2f855a;">
+                <div class="safe-driver-highlight">
+                    <h4>🏆 Safe Driving Recognition</h4>
+                    <p>
                         These drivers have demonstrated good driving habits with fewer than 40 violations and low events per mile,
                         while maintaining significant mileage (100+ miles).
                     </p>
-                    <p class="text-sm" style="color: #2f855a;">
+                    <p>
                         <strong>{top_safe_driver}</strong> leads with only {top_safe_events_per_mile:.2f} events per mile
                         over {top_safe_distance:.1f} miles driven, while maintaining a reasonable average speed of {top_safe_speed:.1f} mph.
                     </p>
-                    <p class="text-sm" style="color: #2f855a; margin-bottom: 0;">
+                    <p style="margin-bottom: 0;">
                         Consider recognizing these drivers for their safe driving practices and using them as examples for drivers requiring corrective action.
                     </p>
                 </div>
